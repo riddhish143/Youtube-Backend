@@ -143,5 +143,5 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node
 
-# No Using /public/src/
-/public/src/
+# No Using /public/
+/public/
