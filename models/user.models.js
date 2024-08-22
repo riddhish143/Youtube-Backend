@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { JsonWebTokenError } from "jsonwebtoken";
+// import { JsonWebTokenError } from "jsonwebtoken";
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
@@ -49,12 +49,14 @@ const userSchema = new mongoose.Schema({
 })
 
 // Pre is a token that is used before saving user information mean before saving encryption will be done
+
 // we use function () {} instead of callback because in call back we don't have access to this key word and this key word is required to access userSchema
+
 userSchema.pre("save", async function (next) {
   // we use this if because if any change made in user schema like avatar , image then this should run again and again and this will cause problem so to avoid this we use if this.isModified is an inbuilt function 
   if (!this.isModified('password')) return next();
 
-  this.password = bcrypt.hash(this.password, 10)
+  this.password = await bcrypt.hash(this.password, 10)
   next()
 })
 
