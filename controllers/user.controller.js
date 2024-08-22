@@ -26,7 +26,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Check if user already exists (check using username or email)
 
-  const exitedUser = User.findOne({
+  const exitedUser = await User.findOne({
     $or: [{ username }, { email }]
   })
 
@@ -38,9 +38,17 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.files?.avatar[0]?.path
   console.log(avatarLocalPath)
 
-  const coverImageLocalPath = req.files?.coverImage[0]?.path
-  console.log(coverImageLocalPath)
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path
+  // console.log(coverImageLocalPath)
 
+  // Above thing can cause issue when we don't have coverImage uploaded so better code is given below
+
+  let coverImageLocalPath;
+  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0)
+  {
+    coverImageLocalPath = req.files.coverImage[0].path
+  }
+  
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar File is Required.")
   }
