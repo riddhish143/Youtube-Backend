@@ -149,7 +149,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
 })
 
-
 const logOutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
@@ -180,35 +179,108 @@ const logOutUser = asyncHandler(async (req, res) => {
 const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
-  
+
     if (!incomingRefreshToken) {
       throw new ApiError(401, "Unauthorized Request.")
     }
-  
+
     const decodedToken = jwt.verify(
       token = incomingRefreshToken,
       secretOrPublicKey = process.env.REFRESH_TOKEN_SECRET
     )
-  
+
     const user = await User.findById(decodedToken?._id)
     if (!incomingRefreshToken) {
       throw new ApiError(401, "Invalid User.")
     }
-  
+
     if (incomingRefreshToken !== user?.refreshToken) {
       throw new ApiError(401, "Refresh Token Used or Expired.")
     }
-  
+
     const options = {
       httpOnly: true,
       secure: true
     }
-  
+
     const { accessToken, newrefreshToken } = await generateAccessandRefreshToken(user._id)
-  
+
     return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", newrefreshToken, options).json(new ApiResponse(200, { accessToken, refreshToken: newrefreshToken }, "New Refresh and Access Token Created."))
   } catch (error) {
-    throw new ApiError(401,error?.message || "Invalid Refresh Token.")
+    throw new ApiError(401, error?.message || "Invalid Refresh Token.")
   }
 })
-export { registerUser, loginUser, logOutUser,  refreshAccessToken }
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body
+  const user = await User.findById(req.user?._id)
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+  if (!oldPassword) {
+    throw new ApiError(400, "Invalid Old Password.")
+  }
+
+  user.password = newPassword
+  await user.save({ validateBeforeSave: false })
+
+  return res.status(200).json(new ApiResponse(200, {}, "Password Change Successfully."))
+})
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res.status(200).json(200, req.user, "Current user fetched successfully.")
+})
+
+const updateAccountDetail = asyncHandler(async (req, res) => {
+  const { fullname, email } = req.body
+
+  if (!fullname || !email) {
+    throw new ApiError(400, "All the fields are required.")
+  }
+
+  const user = User.findByIdAndUpdate(req.user?._id,
+    {
+      $set: {
+        fullname: fullname,
+        email: email
+      }
+    }, { new: true }).select("-password")
+
+  return res.status(200).json(new ApiResponse(200, user, "Account detail updated successfully."))
+})
+
+// use should write different controller for updating files
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing.")
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading on avatar")
+  }
+
+  await User.findByIdAndUpdate(req.user?._id, { $set: { avatar: avatar.url } }, { new: true }).select("-password")
+
+  res.status(200).json(new ApiResponse(200,user,"Avatar successfully updated."))
+})
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const CoverImageLocalPath = req.file?.path
+  if (!CoverImageLocalPath) {
+    throw new ApiError(400, "CoverImage file is missing.")
+  }
+
+  const CoverImage = await uploadOnCloudinary(CoverImageLocalPath)
+
+  if (!CoverImage.url) {
+    throw new ApiError(400, "Error while uploading on CoverImage")
+  }
+
+  await User.findByIdAndUpdate(req.user?._id, { $set: { CoverImage: CoverImage.url } }, { new: true }).select("-password")
+
+  res.status(200).json(new ApiResponse(200, user, "CoverImage successfully updated."))
+})
+export { registerUser, loginUser, logOutUser, refreshAccessToken ,changeCurrentPassword , getCurrentUser , updateCoverImage , updateUserAvatar}
