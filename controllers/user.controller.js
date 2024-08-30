@@ -227,7 +227,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-  return res.status(200).json(200, req.user, "Current user fetched successfully.")
+  return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully."))
 })
 
 const updateAccountDetail = asyncHandler(async (req, res) => {
@@ -262,9 +262,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while uploading on avatar")
   }
 
-  await User.findByIdAndUpdate(req.user?._id, { $set: { avatar: avatar.url } }, { new: true }).select("-password")
-
-  res.status(200).json(new ApiResponse(200,user,"Avatar successfully updated."))
+  const user = await User.findByIdAndUpdate(req.user?._id, { $set: { avatar: avatar.url } }, { new: true }).select("-password")
+ 
+  res.status(200).json(new ApiResponse(200, user,"Avatar successfully updated."))
 })
 
 const updateCoverImage = asyncHandler(async (req, res) => {
@@ -279,8 +279,10 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while uploading on CoverImage")
   }
 
-  await User.findByIdAndUpdate(req.user?._id, { $set: { CoverImage: CoverImage.url } }, { new: true }).select("-password")
+  const user = await User.findByIdAndUpdate(req.user?._id, { $set: { CoverImage: CoverImage.url } }, { new: true }).select("-password")
 
   res.status(200).json(new ApiResponse(200, user, "CoverImage successfully updated."))
 })
+
+
 export { registerUser, loginUser, logOutUser, refreshAccessToken ,changeCurrentPassword , getCurrentUser , updateCoverImage , updateUserAvatar}
